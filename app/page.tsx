@@ -2,127 +2,165 @@
 
 import { useState } from "react";
 
-type Person = {
+type Member = {
+  id: number;
   name: string;
-  relation: string;
   age: string;
-  gender: string;
+  gender: "male" | "female";
 };
 
 export default function Home() {
-  const [caseName, setCaseName] = useState("個案");
-  const [caseAge, setCaseAge] = useState("");
-  const [caseGender, setCaseGender] = useState("女");
+  const [members, setMembers] = useState<Member[]>([]);
+  const [name, setName] = useState("");
+  const [age, setAge] = useState("");
+  const [gender, setGender] = useState<"male" | "female" | "">("");
+  const [idCounter, setIdCounter] = useState(1);
 
-  const [people, setPeople] = useState<Person[]>([]);
+  const addMember = () => {
+    if (!name || !age || !gender) return;
 
-  const [form, setForm] = useState<Person>({
-    name: "",
-    relation: "父親",
-    age: "",
-    gender: "男",
-  });
+    const newMember: Member = {
+      id: idCounter,
+      name,
+      age,
+      gender,
+    };
 
-  const addPerson = () => {
-    if (!form.name) return;
-    setPeople([...people, form]);
-    setForm({ name: "", relation: "父親", age: "", gender: "男" });
-  };
+    setMembers([...members, newMember]);
+    setIdCounter(idCounter + 1);
 
-  const removePerson = (index: number) => {
-    setPeople(people.filter((_, i) => i !== index));
+    setName("");
+    setAge("");
+    setGender("");
   };
 
   return (
-    <div style={{ padding: 30, fontFamily: "sans-serif" }}>
-      <h1>家庭樹生成系統</h1>
+    <div style={styles.container}>
+      <h1 style={styles.title}>護理家庭樹 Genogram</h1>
 
-      <h2>個案資料</h2>
-      <input
-        placeholder="個案名稱"
-        value={caseName}
-        onChange={(e) => setCaseName(e.target.value)}
-      />
-      <input
-        placeholder="年齡"
-        value={caseAge}
-        onChange={(e) => setCaseAge(e.target.value)}
-      />
-      <select value={caseGender} onChange={(e) => setCaseGender(e.target.value)}>
-        <option>男</option>
-        <option>女</option>
-      </select>
+      {/* 輸入區 */}
+      <div style={styles.form}>
+        <input
+          placeholder="姓名"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          style={styles.input}
+        />
 
-      <hr />
+        <input
+          placeholder="年齡"
+          type="number"
+          value={age}
+          onChange={(e) => setAge(e.target.value)}
+          style={styles.input}
+        />
 
-      <h2>新增關係者</h2>
+        <select
+          value={gender}
+          onChange={(e) => setGender(e.target.value as any)}
+          style={styles.input}
+        >
+          <option value="">選擇性別</option>
+          <option value="male">男性</option>
+          <option value="female">女性</option>
+        </select>
 
-      <input
-        placeholder="姓名"
-        value={form.name}
-        onChange={(e) => setForm({ ...form, name: e.target.value })}
-      />
-
-      <select
-        value={form.relation}
-        onChange={(e) => setForm({ ...form, relation: e.target.value })}
-      >
-        <option>父親</option>
-        <option>母親</option>
-        <option>配偶</option>
-        <option>子女</option>
-        <option>兄弟姊妹</option>
-      </select>
-
-      <input
-        placeholder="年齡"
-        value={form.age}
-        onChange={(e) => setForm({ ...form, age: e.target.value })}
-      />
-
-      <select
-        value={form.gender}
-        onChange={(e) => setForm({ ...form, gender: e.target.value })}
-      >
-        <option>男</option>
-        <option>女</option>
-      </select>
-
-      <button onClick={addPerson}>新增</button>
-
-      <hr />
-
-      <h2>家庭樹</h2>
-
-      <div
-        style={{
-          border: "2px solid black",
-          padding: 20,
-          marginBottom: 20,
-          display: "inline-block",
-        }}
-      >
-        <b>{caseName}</b> ({caseGender}, {caseAge}歲)
+        <button onClick={addMember} style={styles.button}>
+          新增家庭成員
+        </button>
       </div>
 
-      <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-        {people.map((p, i) => (
-          <div
-            key={i}
-            style={{
-              border: "1px solid gray",
-              padding: 10,
-              borderRadius: 8,
-            }}
-          >
-            <div>{p.name}</div>
-            <div>{p.relation}</div>
-            <div>{p.gender}</div>
-            <div>{p.age}歲</div>
-            <button onClick={() => removePerson(i)}>刪除</button>
+      {/* 家庭樹顯示 */}
+      <div style={styles.tree}>
+        {members.map((m) => (
+          <div key={m.id} style={styles.nodeWrapper}>
+            {m.gender === "male" ? (
+              <div style={{ ...styles.square, borderColor: "#4a90e2" }}>
+                <div style={styles.symbol}>♂</div>
+                <div>{m.name}</div>
+                <div>{m.age}歲</div>
+              </div>
+            ) : (
+              <div style={{ ...styles.circle, borderColor: "#e94e77" }}>
+                <div style={styles.symbol}>♀</div>
+                <div>{m.name}</div>
+                <div>{m.age}歲</div>
+              </div>
+            )}
           </div>
         ))}
       </div>
     </div>
   );
 }
+
+const styles: Record<string, React.CSSProperties> = {
+  container: {
+    fontFamily: "Arial",
+    padding: 30,
+    textAlign: "center",
+  },
+  title: {
+    marginBottom: 20,
+  },
+  form: {
+    display: "flex",
+    gap: 10,
+    justifyContent: "center",
+    flexWrap: "wrap",
+    marginBottom: 30,
+  },
+  input: {
+    padding: 10,
+    borderRadius: 6,
+    border: "1px solid #ccc",
+    minWidth: 120,
+  },
+  button: {
+    padding: 10,
+    backgroundColor: "#333",
+    color: "white",
+    border: "none",
+    borderRadius: 6,
+    cursor: "pointer",
+  },
+  tree: {
+    display: "flex",
+    flexWrap: "wrap",
+    justifyContent: "center",
+    gap: 20,
+    marginTop: 20,
+  },
+  nodeWrapper: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+  },
+
+  square: {
+    width: 110,
+    height: 110,
+    border: "3px solid",
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "center",
+    borderRadius: 6,
+    backgroundColor: "#f5faff",
+  },
+
+  circle: {
+    width: 110,
+    height: 110,
+    border: "3px solid",
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "center",
+    borderRadius: "50%",
+    backgroundColor: "#fff5f8",
+  },
+
+  symbol: {
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+};
