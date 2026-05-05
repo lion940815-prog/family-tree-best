@@ -2,7 +2,13 @@
 
 import { useState } from "react";
 
-type Relation = "self" | "father" | "mother" | "sibling" | "child";
+type Relation =
+  | "self"
+  | "father"
+  | "mother"
+  | "spouse"
+  | "sibling"
+  | "child";
 
 type Member = {
   id: number;
@@ -21,20 +27,20 @@ export default function Home() {
   const [idCounter, setIdCounter] = useState(1);
 
   const addMember = () => {
-    // 👉 只限制「性別與關係」，姓名年齡可空
     if (!gender || !relation) return;
 
-    const newMember: Member = {
-      id: idCounter,
-      name: name.trim() || "未知",
-      age: age.trim() || "未知",
-      gender,
-      relation,
-    };
+    setMembers([
+      ...members,
+      {
+        id: idCounter,
+        name: name.trim() || undefined,
+        age: age.trim() || undefined,
+        gender,
+        relation,
+      },
+    ]);
 
-    setMembers([...members, newMember]);
     setIdCounter(idCounter + 1);
-
     setName("");
     setAge("");
     setGender("");
@@ -44,14 +50,15 @@ export default function Home() {
   const self = members.find((m) => m.relation === "self");
   const fathers = members.filter((m) => m.relation === "father");
   const mothers = members.filter((m) => m.relation === "mother");
+  const spouses = members.filter((m) => m.relation === "spouse");
   const siblings = members.filter((m) => m.relation === "sibling");
   const children = members.filter((m) => m.relation === "child");
 
   return (
     <div style={styles.container}>
-      <h2>護理家庭樹 Genogram</h2>
+      <h2>護理家庭樹 Genogram（完整版）</h2>
 
-      {/* 輸入 */}
+      {/* 輸入區 */}
       <div style={styles.form}>
         <input
           placeholder="姓名（可空）"
@@ -85,6 +92,7 @@ export default function Home() {
           <option value="self">個案</option>
           <option value="father">父親</option>
           <option value="mother">母親</option>
+          <option value="spouse">配偶</option>
           <option value="sibling">兄弟姊妹</option>
           <option value="child">子女</option>
         </select>
@@ -94,11 +102,51 @@ export default function Home() {
         </button>
       </div>
 
-      {/* 樹 */}
-      <div style={styles.tree}>
-        {[...fathers, ...mothers, self, ...siblings, ...children]
-          .filter(Boolean)
-          .map((m) => m && renderNode(m))}
+      {/* 樹狀圖 */}
+      <div style={styles.treeWrapper}>
+        <svg style={styles.svg}>
+          {/* 父母 → 個案 */}
+          {self &&
+            fathers.map((f) => drawLine("parent", "self"))}
+
+          {self &&
+            mothers.map((m) => drawLine("parent", "self"))}
+
+          {/* 配偶 → 個案 */}
+          {self &&
+            spouses.map(() => drawLine("spouse", "self"))}
+
+          {/* 個案 → 子女 */}
+          {self &&
+            children.map((c, i) => (
+              <line
+                key={c.id}
+                x1={centerX}
+                y1={300}
+                x2={100 + i * 120}
+                y2={450}
+                stroke="black"
+              />
+            ))}
+        </svg>
+
+        {/* 節點 */}
+        <div style={styles.layout}>
+          {/* 父母層 */}
+          <div style={styles.row}>{fathers.map(renderNode)}{mothers.map(renderNode)}</div>
+
+          {/* 配偶層 */}
+          <div style={styles.row}>{spouses.map(renderNode)}</div>
+
+          {/* 個案層 */}
+          <div style={styles.row}>{self && renderNode(self)}</div>
+
+          {/* 兄弟姊妹層 */}
+          <div style={styles.row}>{siblings.map(renderNode)}</div>
+
+          {/* 子女層 */}
+          <div style={styles.row}>{children.map(renderNode)}</div>
+        </div>
       </div>
     </div>
   );
@@ -109,15 +157,32 @@ export default function Home() {
     return (
       <div key={m.id} style={styles.node}>
         <div style={isMale ? styles.square : styles.circle}>
-          {isMale ? "□" : "○"}
-          <div>{m.name || "未知"}</div>
-          <div>{m.age || "未知"}歲</div>
+          <div>{isMale ? "□" : "○"}</div>
+
+          {/* 👉 未知不顯示 */}
+          {m.name && <div>{m.name}</div>}
+          {m.age && <div>{m.age}歲</div>}
+
           <div style={{ fontSize: 10 }}>{m.relation}</div>
         </div>
       </div>
     );
   }
+
+  function drawLine(type: string, target: string) {
+    return (
+      <line
+        x1={centerX}
+        y1={type === "parent" ? 150 : 300}
+        x2={centerX}
+        y2={300}
+        stroke="black"
+      />
+    );
+  }
 }
+
+const centerX = 300;
 
 const styles: Record<string, React.CSSProperties> = {
   container: {
@@ -146,11 +211,26 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: "pointer",
   },
 
-  tree: {
+  treeWrapper: {
+    position: "relative",
+    height: 600,
+  },
+
+  svg: {
+    position: "absolute",
+    width: "100%",
+    height: "100%",
+  },
+
+  layout: {
+    position: "relative",
+  },
+
+  row: {
     display: "flex",
-    flexWrap: "wrap",
     justifyContent: "center",
     gap: 20,
+    margin: 30,
   },
 
   node: {
