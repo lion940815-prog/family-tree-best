@@ -1,107 +1,128 @@
-<!DOCTYPE html>
-<html lang="zh-Hant">
-<head>
-  <meta charset="UTF-8" />
-  <title>Genogram 家庭樹（護理作業版）</title>
-  <style>
-    body {
-      font-family: Arial;
-      padding: 20px;
-      background: #f7f7f7;
-    }
+"use client";
 
-    .panel {
-      background: white;
-      padding: 15px;
-      border-radius: 10px;
-      margin-bottom: 20px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-    }
+import { useState } from "react";
 
-    input, select, button {
-      margin: 5px;
-      padding: 6px;
-    }
+type Person = {
+  name: string;
+  relation: string;
+  age: string;
+  gender: string;
+};
 
-    .node {
-      display: inline-block;
-      padding: 10px;
-      margin: 10px;
-      border-radius: 10px;
-      min-width: 120px;
-      text-align: center;
-      position: relative;
-      background: #e3f2fd;
-      border: 2px solid #90caf9;
-    }
+export default function Home() {
+  const [caseName, setCaseName] = useState("個案");
+  const [caseAge, setCaseAge] = useState("");
+  const [caseGender, setCaseGender] = useState("女");
 
-    .female {
-      background: #fce4ec;
-      border-color: #f48fb1;
-    }
+  const [people, setPeople] = useState<Person[]>([]);
 
-    .male {
-      background: #e3f2fd;
-    }
+  const [form, setForm] = useState<Person>({
+    name: "",
+    relation: "父親",
+    age: "",
+    gender: "男",
+  });
 
-    #canvas {
-      position: relative;
-      min-height: 400px;
-      background: white;
-      border-radius: 10px;
-      padding: 20px;
-    }
+  const addPerson = () => {
+    if (!form.name) return;
+    setPeople([...people, form]);
+    setForm({ name: "", relation: "父親", age: "", gender: "男" });
+  };
 
-    svg {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      pointer-events: none;
-    }
-  </style>
-</head>
-<body>
+  const removePerson = (index: number) => {
+    setPeople(people.filter((_, i) => i !== index));
+  };
 
-<h2>🧬 護理作業專用家庭樹（Genogram）</h2>
+  return (
+    <div style={{ padding: 30, fontFamily: "sans-serif" }}>
+      <h1>家庭樹生成系統</h1>
 
-<div class="panel">
-  <h3>新增家庭成員</h3>
-  <input id="name" placeholder="姓名" />
-  <input id="age" type="number" placeholder="年齡" />
-  <select id="gender">
-    <option value="male">男</option>
-    <option value="female">女</option>
-  </select>
-  <button onclick="addPerson()">新增</button>
-</div>
+      <h2>個案資料</h2>
+      <input
+        placeholder="個案名稱"
+        value={caseName}
+        onChange={(e) => setCaseName(e.target.value)}
+      />
+      <input
+        placeholder="年齡"
+        value={caseAge}
+        onChange={(e) => setCaseAge(e.target.value)}
+      />
+      <select value={caseGender} onChange={(e) => setCaseGender(e.target.value)}>
+        <option>男</option>
+        <option>女</option>
+      </select>
 
-<div class="panel">
-  <h3>建立關係</h3>
-  <select id="from"></select>
-  <select id="relation">
-    <option value="spouse">配偶</option>
-    <option value="parent">父母 → 子女</option>
-  </select>
-  <select id="to"></select>
-  <button onclick="addRelation()">建立關係</button>
-</div>
+      <hr />
 
-<div id="canvas">
-  <svg id="lines"></svg>
-</div>
+      <h2>新增關係者</h2>
 
-<script>
-let people = [];
-let relations = [];
+      <input
+        placeholder="姓名"
+        value={form.name}
+        onChange={(e) => setForm({ ...form, name: e.target.value })}
+      />
 
-function addPerson() {
-  const name = document.getElementById("name").value;
-  const age = document.getElementById("age").value;
-  const gender = document.getElementById("gender").value;
+      <select
+        value={form.relation}
+        onChange={(e) => setForm({ ...form, relation: e.target.value })}
+      >
+        <option>父親</option>
+        <option>母親</option>
+        <option>配偶</option>
+        <option>子女</option>
+        <option>兄弟姊妹</option>
+      </select>
 
-  if (!name) return alert("請輸入姓名");
+      <input
+        placeholder="年齡"
+        value={form.age}
+        onChange={(e) => setForm({ ...form, age: e.target.value })}
+      />
 
-  const id = Date.now();
-  people.push({ id, nam
+      <select
+        value={form.gender}
+        onChange={(e) => setForm({ ...form, gender: e.target.value })}
+      >
+        <option>男</option>
+        <option>女</option>
+      </select>
+
+      <button onClick={addPerson}>新增</button>
+
+      <hr />
+
+      <h2>家庭樹</h2>
+
+      <div
+        style={{
+          border: "2px solid black",
+          padding: 20,
+          marginBottom: 20,
+          display: "inline-block",
+        }}
+      >
+        <b>{caseName}</b> ({caseGender}, {caseAge}歲)
+      </div>
+
+      <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+        {people.map((p, i) => (
+          <div
+            key={i}
+            style={{
+              border: "1px solid gray",
+              padding: 10,
+              borderRadius: 8,
+            }}
+          >
+            <div>{p.name}</div>
+            <div>{p.relation}</div>
+            <div>{p.gender}</div>
+            <div>{p.age}歲</div>
+            <button onClick={() => removePerson(i)}>刪除</button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
