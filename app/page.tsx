@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 
 type Relation = "self" | "father" | "mother" | "spouse" | "child";
 
@@ -14,80 +14,38 @@ export default function Home() {
   const [members, setMembers] = useState<Member[]>([]);
   const [gender, setGender] = useState<"male" | "female" | "">("");
   const [relation, setRelation] = useState<Relation>("self");
-
-  const refs = useRef<Record<number, HTMLDivElement | null>>({});
-  const [lines, setLines] = useState<
-    { x1: number; y1: number; x2: number; y2: number }[]
-  >([]);
+  const [id, setId] = useState(1);
 
   const add = () => {
     if (!gender) return;
 
-    setMembers([
-      ...members,
-      {
-        id: Date.now(),
-        gender,
-        relation,
-      },
-    ]);
+    setMembers([...members, { id, gender, relation }]);
+    setId(id + 1);
+    setGender("");
+    setRelation("self");
   };
 
   const self = members.find((m) => m.relation === "self");
+  const fathers = members.filter((m) => m.relation === "father");
+  const mothers = members.filter((m) => m.relation === "mother");
+  const spouse = members.find((m) => m.relation === "spouse");
+  const children = members.filter((m) => m.relation === "child");
 
-  // ✅ 真正修線（關鍵）
-  useEffect(() => {
-    const getCenter = (el: HTMLElement) => {
-      const r = el.getBoundingClientRect();
-      return {
-        x: r.left + r.width / 2,
-        y: r.top + r.height / 2,
-      };
+  const layout = useMemo(() => {
+    return {
+      w: 600,
+      h: 450,
+      parentY: 60,
+      midY: 200,
+      childY: 340,
     };
-
-    const selfEl = Object.values(refs.current).find(
-      (el) => el?.dataset.role === "self"
-    );
-
-    if (!selfEl) return;
-
-    const s = getCenter(selfEl);
-
-    const newLines: any[] = [];
-
-    members.forEach((m) => {
-      const el = refs.current[m.id];
-      if (!el) return;
-
-      const p = getCenter(el);
-
-      if (["father", "mother", "spouse"].includes(m.relation)) {
-        newLines.push({
-          x1: p.x,
-          y1: p.y,
-          x2: s.x,
-          y2: s.y,
-        });
-      }
-
-      if (m.relation === "child") {
-        newLines.push({
-          x1: s.x,
-          y1: s.y,
-          x2: p.x,
-          y2: p.y,
-        });
-      }
-    });
-
-    setLines(newLines);
-  }, [members]);
+  }, []);
 
   return (
     <div style={styles.container}>
-      <h2>Genogram</h2>
+      <h2>專題級 Genogram</h2>
 
-      {/* 控制 */}
+      {/* 控制區 */}
       <div style={styles.form}>
         <select value={gender} onChange={(e) => setGender(e.target.value as any)}>
           <option value="">性別</option>
@@ -106,34 +64,65 @@ export default function Home() {
         <button onClick={add}>新增</button>
       </div>
 
-      {/* SVG 線 */}
-      <svg style={styles.svg}>
-        {lines.map((l, i) => (
-          <line key={i} {...l} stroke="black" />
-        ))}
-      </svg>
+      {/* 畫布 */}
+      <div style={styles.canvas}>
+        <svg width="600" height="450" style={styles.svg}>
+          {/* 父母 → 個案 */}
+          {(fathers.length || mothers.length) > 0 && (
+            <line x1={300} y1={80} x2={300} y2={200} stroke="black" />
+          )}
 
-      {/* 節點 */}
-      <div style={styles.board}>
-        {members.map((m) => (
-          <div
-            key={m.id}
-            ref={(el) => (refs.current[m.id] = el)}
-            data-role={m.relation}
-            style={{
-              ...styles.node,
-              ...shape(m.gender),
-            }}
-          />
-        ))}
+          {/* 個案 → 子女 */}
+          {children.map((_, i) => (
+            <line
+              key={i}
+              x1={300}
+              y1={220}
+              x2={200 + i * 120}
+              y2={340}
+              stroke="black"
+            />
+          ))}
+
+          {/* 配偶線 */}
+          {spouse && (
+            <line x1={220} y1={200} x2={380} y2={200} stroke="black" />
+          )}
+        </svg>
+
+        {/* 父母 */}
+        <div style={{ ...styles.row, top: layout.parentY }}>
+          {fathers.map(renderNode)}
+          {mothers.map(renderNode)}
+        </div>
+
+        {/* 配偶 + 個案 */}
+        <div style={{ ...styles.midRow, top: layout.midY }}>
+          {spouse && renderNode(spouse)}
+          {self && renderSelf(self)}
+        </div>
+
+        {/* 子女 */}
+        <div style={{ ...styles.row, top: layout.childY }}>
+          {children.map(renderNode)}
+        </div>
       </div>
     </div>
   );
 }
 
-/* ✅ 性別決定形狀（你這點我完全照你要求修正） */
-function shape(g: "male" | "female") {
-  return g === "male" ? styles.square : styles.circle;
+/* ✅ 性別決定形狀（這次正確） */
+function renderNode(m: Member) {
+  return m.gender === "male" ? (
+    <div style={styles.square} />
+  ) : (
+    <div style={styles.circle} />
+  );
+}
+
+/* 個案：不改形狀，只做黑色填滿 */
+function renderSelf(_: Member) {
+  return <div style={styles.self} />;
 }
 
 const styles: Record<string, React.CSSProperties> = {
@@ -149,29 +138,53 @@ const styles: Record<string, React.CSSProperties> = {
     marginBottom: 20,
   },
 
-  board: {
+  canvas: {
     position: "relative",
-    height: 500,
+    width: 600,
+    height: 450,
+    margin: "0 auto",
+    border: "1px solid #ccc",
   },
 
   svg: {
     position: "absolute",
-    width: "100%",
-    height: "100%",
-    left: 0,
     top: 0,
+    left: 0,
     pointerEvents: "none",
   },
 
-  node: {
+  row: {
+    position: "absolute",
+    width: "100%",
+    display: "flex",
+    justifyContent: "center",
+    gap: 40,
+  },
+
+  midRow: {
+    position: "absolute",
+    width: "100%",
+    display: "flex",
+    justifyContent: "center",
+    gap: 80,
+  },
+
+  square: {
     width: 40,
     height: 40,
-    position: "absolute",
     border: "2px solid black",
   },
 
-  square: {},
   circle: {
+    width: 40,
+    height: 40,
+    border: "2px solid black",
     borderRadius: "50%",
+  },
+
+  self: {
+    width: 40,
+    height: 40,
+    backgroundColor: "black",
   },
 };
