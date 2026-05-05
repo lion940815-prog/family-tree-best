@@ -19,16 +19,12 @@ export default function Home() {
   const addMember = () => {
     if (!name || !age || !gender) return;
 
-    const newMember: Member = {
-      id: idCounter,
-      name,
-      age,
-      gender,
-    };
+    setMembers([
+      ...members,
+      { id: idCounter, name, age, gender },
+    ]);
 
-    setMembers([...members, newMember]);
     setIdCounter(idCounter + 1);
-
     setName("");
     setAge("");
     setGender("");
@@ -36,7 +32,7 @@ export default function Home() {
 
   return (
     <div style={styles.container}>
-      <h1 style={styles.title}>護理家庭樹 Genogram</h1>
+      <h1>護理家庭樹 Genogram</h1>
 
       {/* 輸入區 */}
       <div style={styles.form}>
@@ -60,107 +56,146 @@ export default function Home() {
           onChange={(e) => setGender(e.target.value as any)}
           style={styles.input}
         >
-          <option value="">選擇性別</option>
-          <option value="male">男性</option>
-          <option value="female">女性</option>
+          <option value="">性別</option>
+          <option value="male">男</option>
+          <option value="female">女</option>
         </select>
 
         <button onClick={addMember} style={styles.button}>
-          新增家庭成員
+          新增成員
         </button>
       </div>
 
-      {/* 家庭樹顯示 */}
-      <div style={styles.tree}>
-        {members.map((m) => (
-          <div key={m.id} style={styles.nodeWrapper}>
-            {m.gender === "male" ? (
-              <div style={{ ...styles.square, borderColor: "#4a90e2" }}>
-                <div style={styles.symbol}>♂</div>
+      {/* 家庭樹容器 */}
+      <div style={styles.treeWrapper}>
+        {/* 關係線 SVG */}
+        <svg style={styles.svg}>
+          {members.length > 1 &&
+            members.slice(1).map((m, i) => {
+              const fromIndex = 0;
+              const toIndex = i + 1;
+
+              const fromPos = getPos(fromIndex);
+              const toPos = getPos(toIndex);
+
+              return (
+                <line
+                  key={m.id}
+                  x1={fromPos.x}
+                  y1={fromPos.y}
+                  x2={toPos.x}
+                  y2={toPos.y}
+                  stroke="black"
+                />
+              );
+            })}
+        </svg>
+
+        {/* 節點 */}
+        <div style={styles.grid}>
+          {members.map((m) => (
+            <div key={m.id} style={styles.node}>
+              <div style={m.gender === "male" ? styles.square : styles.circle}>
+                <div>{m.gender === "male" ? "□" : "○"}</div>
                 <div>{m.name}</div>
-                <div>{m.age}歲</div>
+                <div>{m.age} 歲</div>
               </div>
-            ) : (
-              <div style={{ ...styles.circle, borderColor: "#e94e77" }}>
-                <div style={styles.symbol}>♀</div>
-                <div>{m.name}</div>
-                <div>{m.age}歲</div>
-              </div>
-            )}
-          </div>
-        ))}
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
+
+  // 計算節點位置（3欄 grid）
+  function getPos(index: number) {
+    const size = 160;
+    const cols = 3;
+
+    const col = index % cols;
+    const row = Math.floor(index / cols);
+
+    return {
+      x: col * size + 80,
+      y: row * size + 80,
+    };
+  }
 }
 
 const styles: Record<string, React.CSSProperties> = {
   container: {
     fontFamily: "Arial",
-    padding: 30,
+    padding: 20,
     textAlign: "center",
   },
-  title: {
-    marginBottom: 20,
-  },
+
   form: {
     display: "flex",
     gap: 10,
     justifyContent: "center",
     flexWrap: "wrap",
-    marginBottom: 30,
+    marginBottom: 20,
   },
+
   input: {
-    padding: 10,
-    borderRadius: 6,
-    border: "1px solid #ccc",
-    minWidth: 120,
+    padding: 8,
+    border: "1px solid black",
   },
+
   button: {
-    padding: 10,
-    backgroundColor: "#333",
-    color: "white",
-    border: "none",
-    borderRadius: 6,
+    padding: 8,
+    border: "1px solid black",
+    background: "white",
     cursor: "pointer",
   },
-  tree: {
-    display: "flex",
-    flexWrap: "wrap",
-    justifyContent: "center",
-    gap: 20,
+
+  treeWrapper: {
+    position: "relative",
+    width: "100%",
+    height: 500,
     marginTop: 20,
   },
-  nodeWrapper: {
+
+  svg: {
+    position: "absolute",
+    width: "100%",
+    height: "100%",
+    top: 0,
+    left: 0,
+  },
+
+  grid: {
+    position: "relative",
+    display: "grid",
+    gridTemplateColumns: "repeat(3, 160px)",
+    justifyContent: "center",
+    gap: 40,
+  },
+
+  node: {
     display: "flex",
-    flexDirection: "column",
+    justifyContent: "center",
     alignItems: "center",
   },
 
   square: {
-    width: 110,
-    height: 110,
-    border: "3px solid",
+    width: 100,
+    height: 100,
+    border: "2px solid black",
     display: "flex",
     flexDirection: "column",
     justifyContent: "center",
-    borderRadius: 6,
-    backgroundColor: "#f5faff",
+    alignItems: "center",
   },
 
   circle: {
-    width: 110,
-    height: 110,
-    border: "3px solid",
+    width: 100,
+    height: 100,
+    border: "2px solid black",
+    borderRadius: "50%",
     display: "flex",
     flexDirection: "column",
     justifyContent: "center",
-    borderRadius: "50%",
-    backgroundColor: "#fff5f8",
-  },
-
-  symbol: {
-    fontSize: 18,
-    fontWeight: "bold",
+    alignItems: "center",
   },
 };
