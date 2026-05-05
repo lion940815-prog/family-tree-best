@@ -1,89 +1,88 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="zh-Hant">
 <head>
-<meta charset="UTF-8">
-<title>家庭樹產生器（護理用）</title>
-<style>
-  #tree { margin-top: 20px; }
-  .person {
-    display: inline-block;
-    padding: 10px;
-    margin: 10px;
-    border: 2px solid #000;
-    text-align: center;
-    border-radius: 10px;
-    width: 80px;
-  }
-  .male { border-radius: 0px; }     /* 男性 = 方框 */
-  .female { border-radius: 50px; }  /* 女性 = 圓形 */
-  .main { border: 3px solid red; }  /* 個案 */
-</style>
+    <meta charset="UTF-8">
+    <title>家庭樹建立系統</title>
+    <style>
+        body {
+            font-family: Arial;
+            padding: 20px;
+        }
+        input, select, button {
+            margin: 5px;
+            padding: 5px;
+        }
+        .card {
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin-top: 10px;
+            width: 250px;
+        }
+    </style>
 </head>
+
 <body>
 
-<h2>護理用家庭樹產生器</h2>
+<h2>家庭樹輸入系統</h2>
 
-姓名：<input id="name">
-性別：
+<label>姓名：</label>
+<input type="text" id="name">
+
+<label>年齡：</label>
+<input type="number" id="age">
+
+<label>性別：</label>
 <select id="gender">
-  <option value="male">男</option>
-  <option value="female">女</option>
-</select>
-年齡：<input id="age" type="number" min="0">
-關係：
-<select id="relation">
-  <option value="self">個案</option>
-  <option value="father">父親</option>
-  <option value="mother">母親</option>
-  <option value="brother">兄弟</option>
-  <option value="sister">姊妹</option>
-  <option value="son">兒子</option>
-  <option value="daughter">女兒</option>
+    <option value="男">男</option>
+    <option value="女">女</option>
 </select>
 
-<button onclick="addPerson()">新增</button>
+<button onclick="addPerson()">新增成員</button>
 
-<div id="tree"></div>
+<h3>家庭成員</h3>
+<div id="familyList"></div>
 
 <script>
-let members = [];
+    let family = [];
 
-function addPerson() {
-  let name = document.getElementById("name").value;
-  let gender = document.getElementById("gender").value;
-  let age = document.getElementById("age").value;
-  let relation = document.getElementById("relation").value;
+    function addPerson() {
+        const name = document.getElementById("name").value;
+        const age = document.getElementById("age").value;
+        const gender = document.getElementById("gender").value;
 
-  members.push({ name, gender, age, relation });
-  renderTree();
-}
+        if (!name || !age) {
+            alert("請輸入姓名與年齡");
+            return;
+        }
 
-function renderTree() {
-  let tree = document.getElementById("tree");
-  tree.innerHTML = "";
+        const person = {
+            name: name,
+            age: age,
+            gender: gender
+        };
 
-  members.forEach(m => {
-    let div = document.createElement("div");
-    div.classList.add("person");
-    div.classList.add(m.gender);
-    if (m.relation === "self") div.classList.add("main");
-    div.innerHTML = `${m.name}<br>${m.age}歲<br>${translate(m.relation)}`;
-    tree.appendChild(div);
-  });
-}
+        family.push(person);
+        renderFamily();
 
-function translate(r) {
-  const map = {
-    self: "個案",
-    father: "父",
-    mother: "母",
-    brother: "兄弟",
-    sister: "姊妹",
-    son: "子",
-    daughter: "女"
-  };
-  return map[r] || r;
-}
+        // 清空輸入
+        document.getElementById("name").value = "";
+        document.getElementById("age").value = "";
+    }
+
+    function renderFamily() {
+        const list = document.getElementById("familyList");
+        list.innerHTML = "";
+
+        family.forEach((p, index) => {
+            list.innerHTML += `
+                <div class="card">
+                    <b>${p.name}</b><br>
+                    年齡：${p.age}<br>
+                    性別：${p.gender}
+                </div>
+            `;
+        });
+    }
 </script>
 
 </body>
