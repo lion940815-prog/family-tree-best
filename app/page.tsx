@@ -29,34 +29,37 @@ export default function Home() {
   const addMember = () => {
     if (!gender || !relation) return;
 
-    setMembers([
-      ...members,
-      {
-        id: idCounter,
-        name: name.trim() || undefined,
-        age: age.trim() || undefined,
-        gender,
-        relation,
-      },
-    ]);
+    const newMember: Member = {
+      id: idCounter,
+      name: name.trim() || undefined,
+      age: age.trim() || undefined,
+      gender,
+      relation,
+    };
 
+    setMembers([...members, newMember]);
     setIdCounter(idCounter + 1);
+
     setName("");
     setAge("");
     setGender("");
     setRelation("self");
   };
 
+  const deleteMember = (id: number) => {
+    setMembers(members.filter((m) => m.id !== id));
+  };
+
   const self = members.find((m) => m.relation === "self");
   const fathers = members.filter((m) => m.relation === "father");
   const mothers = members.filter((m) => m.relation === "mother");
-  const spouses = members.filter((m) => m.relation === "spouse");
+  const spouse = members.find((m) => m.relation === "spouse");
   const siblings = members.filter((m) => m.relation === "sibling");
   const children = members.filter((m) => m.relation === "child");
 
   return (
     <div style={styles.container}>
-      <h2>護理家庭樹 Genogram（完整版）</h2>
+      <h2>護理家庭樹 Genogram</h2>
 
       {/* 輸入區 */}
       <div style={styles.form}>
@@ -79,7 +82,7 @@ export default function Home() {
           onChange={(e) => setGender(e.target.value as any)}
           style={styles.input}
         >
-          <option value="">性別（必填）</option>
+          <option value="">性別</option>
           <option value="male">男</option>
           <option value="female">女</option>
         </select>
@@ -107,44 +110,61 @@ export default function Home() {
         <svg style={styles.svg}>
           {/* 父母 → 個案 */}
           {self &&
-            fathers.map((f) => drawLine("parent", "self"))}
+            fathers.map(() => (
+              <line
+                key={"father-line"}
+                x1={centerX}
+                y1={120}
+                x2={centerX}
+                y2={240}
+                stroke="black"
+              />
+            ))}
 
           {self &&
-            mothers.map((m) => drawLine("parent", "self"))}
-
-          {/* 配偶 → 個案 */}
-          {self &&
-            spouses.map(() => drawLine("spouse", "self"))}
+            mothers.map(() => (
+              <line
+                key={"mother-line"}
+                x1={centerX}
+                y1={120}
+                x2={centerX}
+                y2={240}
+                stroke="black"
+              />
+            ))}
 
           {/* 個案 → 子女 */}
           {self &&
-            children.map((c, i) => (
+            children.map((_, i) => (
               <line
-                key={c.id}
+                key={"child-" + i}
                 x1={centerX}
-                y1={300}
-                x2={100 + i * 120}
-                y2={450}
+                y1={360}
+                x2={200 + i * 120}
+                y2={500}
                 stroke="black"
               />
             ))}
         </svg>
 
-        {/* 節點 */}
+        {/* 分層 Layout */}
         <div style={styles.layout}>
           {/* 父母層 */}
-          <div style={styles.row}>{fathers.map(renderNode)}{mothers.map(renderNode)}</div>
+          <div style={styles.row}>
+            {fathers.map(renderNode)}
+            {mothers.map(renderNode)}
+          </div>
 
-          {/* 配偶層 */}
-          <div style={styles.row}>{spouses.map(renderNode)}</div>
+          {/* 配偶（左右個案） */}
+          <div style={styles.spouseRow}>
+            <div>{spouse && renderNode(spouse)}</div>
+            <div>{self && renderNode(self)}</div>
+          </div>
 
-          {/* 個案層 */}
-          <div style={styles.row}>{self && renderNode(self)}</div>
-
-          {/* 兄弟姊妹層 */}
+          {/* 兄弟姊妹 */}
           <div style={styles.row}>{siblings.map(renderNode)}</div>
 
-          {/* 子女層 */}
+          {/* 子女 */}
           <div style={styles.row}>{children.map(renderNode)}</div>
         </div>
       </div>
@@ -159,25 +179,20 @@ export default function Home() {
         <div style={isMale ? styles.square : styles.circle}>
           <div>{isMale ? "□" : "○"}</div>
 
-          {/* 👉 未知不顯示 */}
           {m.name && <div>{m.name}</div>}
           {m.age && <div>{m.age}歲</div>}
 
           <div style={{ fontSize: 10 }}>{m.relation}</div>
+
+          {/* 刪除 */}
+          <button
+            onClick={() => deleteMember(m.id)}
+            style={styles.deleteBtn}
+          >
+            刪除
+          </button>
         </div>
       </div>
-    );
-  }
-
-  function drawLine(type: string, target: string) {
-    return (
-      <line
-        x1={centerX}
-        y1={type === "parent" ? 150 : 300}
-        x2={centerX}
-        y2={300}
-        stroke="black"
-      />
     );
   }
 }
@@ -230,7 +245,15 @@ const styles: Record<string, React.CSSProperties> = {
     display: "flex",
     justifyContent: "center",
     gap: 20,
-    margin: 30,
+    margin: 25,
+  },
+
+  spouseRow: {
+    display: "flex",
+    justifyContent: "center",
+    gap: 80,
+    margin: 25,
+    alignItems: "center",
   },
 
   node: {
@@ -254,5 +277,13 @@ const styles: Record<string, React.CSSProperties> = {
     display: "flex",
     flexDirection: "column",
     justifyContent: "center",
+  },
+
+  deleteBtn: {
+    marginTop: 4,
+    fontSize: 10,
+    border: "1px solid black",
+    background: "white",
+    cursor: "pointer",
   },
 };
