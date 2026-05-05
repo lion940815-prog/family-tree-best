@@ -19,11 +19,7 @@ export default function Home() {
   const add = () => {
     if (!gender) return;
 
-    setMembers([
-      ...members,
-      { id, gender, relation },
-    ]);
-
+    setMembers([...members, { id, gender, relation }]);
     setId(id + 1);
     setGender("");
     setRelation("self");
@@ -37,15 +33,17 @@ export default function Home() {
 
   const layout = useMemo(() => {
     return {
-      fatherY: 60,
-      midY: 200,
-      childY: 340,
+      w: 600,
+      h: 450,
+      yParent: 80,
+      ySelf: 200,
+      yChild: 340,
     };
   }, []);
 
   return (
     <div style={styles.container}>
-      <h2>Genogram</h2>
+      <h2>專題級 Genogram</h2>
 
       {/* 控制 */}
       <div style={styles.form}>
@@ -66,9 +64,10 @@ export default function Home() {
         <button onClick={add}>新增</button>
       </div>
 
-      {/* 樹 */}
+      {/* 畫布 */}
       <div style={styles.canvas}>
-        <svg style={styles.svg}>
+        <svg width="600" height="450" style={styles.svg}>
+
           {/* 父母 → self */}
           {(fathers.length > 0 || mothers.length > 0) && (
             <line x1={300} y1={80} x2={300} y2={200} stroke="black" />
@@ -79,34 +78,34 @@ export default function Home() {
             <line
               key={i}
               x1={300}
-              y1={240}
+              y1={220}
               x2={200 + i * 120}
               y2={340}
               stroke="black"
             />
           ))}
 
-          {/* spouse 線 */}
+          {/* spouse line */}
           {spouse && (
             <line x1={220} y1={200} x2={380} y2={200} stroke="black" />
           )}
         </svg>
 
         {/* 父母 */}
-        <div style={{ ...styles.row, top: layout.fatherY }}>
-          {fathers.map((m) => renderNode(m))}
-          {mothers.map((m) => renderNode(m))}
+        <div style={{ ...styles.row, top: layout.yParent }}>
+          {fathers.map(renderNode)}
+          {mothers.map(renderNode)}
         </div>
 
         {/* 配偶 + 個案 */}
-        <div style={{ ...styles.midRow, top: layout.midY }}>
+        <div style={{ ...styles.midRow, top: layout.ySelf }}>
           {spouse && renderNode(spouse)}
           {self && renderSelf()}
         </div>
 
         {/* 子女 */}
-        <div style={{ ...styles.row, top: layout.childY }}>
-          {children.map((m) => renderNode(m))}
+        <div style={{ ...styles.row, top: layout.yChild }}>
+          {children.map(renderNode)}
         </div>
       </div>
     </div>
@@ -127,8 +126,8 @@ export default function Home() {
 
 const styles: Record<string, React.CSSProperties> = {
   container: {
-    textAlign: "center",
     fontFamily: "Arial",
+    textAlign: "center",
   },
 
   form: {
@@ -143,15 +142,13 @@ const styles: Record<string, React.CSSProperties> = {
     width: 600,
     height: 450,
     margin: "0 auto",
-    border: "1px solid #ddd",
+    border: "1px solid #ccc",
   },
 
   svg: {
     position: "absolute",
-    width: "100%",
-    height: "100%",
-    left: 0,
     top: 0,
+    left: 0,
   },
 
   row: {
