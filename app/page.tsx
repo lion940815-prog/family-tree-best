@@ -2,26 +2,16 @@
 
 import { useState } from "react";
 
-type Relation =
-  | "self"
-  | "father"
-  | "mother"
-  | "spouse"
-  | "sibling"
-  | "child";
+type Relation = "self" | "father" | "mother" | "spouse" | "child" | "sibling";
 
 type Member = {
   id: number;
-  name?: string;
-  age?: string;
   gender: "male" | "female";
   relation: Relation;
 };
 
 export default function Home() {
   const [members, setMembers] = useState<Member[]>([]);
-  const [name, setName] = useState("");
-  const [age, setAge] = useState("");
   const [gender, setGender] = useState<"male" | "female" | "">("");
   const [relation, setRelation] = useState<Relation>("self");
   const [idCounter, setIdCounter] = useState(1);
@@ -29,19 +19,16 @@ export default function Home() {
   const addMember = () => {
     if (!gender || !relation) return;
 
-    const newMember: Member = {
-      id: idCounter,
-      name: name.trim() || undefined,
-      age: age.trim() || undefined,
-      gender,
-      relation,
-    };
+    setMembers([
+      ...members,
+      {
+        id: idCounter,
+        gender,
+        relation,
+      },
+    ]);
 
-    setMembers([...members, newMember]);
     setIdCounter(idCounter + 1);
-
-    setName("");
-    setAge("");
     setGender("");
     setRelation("self");
   };
@@ -54,29 +41,15 @@ export default function Home() {
   const fathers = members.filter((m) => m.relation === "father");
   const mothers = members.filter((m) => m.relation === "mother");
   const spouse = members.find((m) => m.relation === "spouse");
-  const siblings = members.filter((m) => m.relation === "sibling");
   const children = members.filter((m) => m.relation === "child");
+  const siblings = members.filter((m) => m.relation === "sibling");
 
   return (
     <div style={styles.container}>
       <h2>護理家庭樹 Genogram</h2>
 
-      {/* 輸入區 */}
+      {/* 輸入 */}
       <div style={styles.form}>
-        <input
-          placeholder="姓名（可空）"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          style={styles.input}
-        />
-
-        <input
-          placeholder="年齡（可空）"
-          value={age}
-          onChange={(e) => setAge(e.target.value)}
-          style={styles.input}
-        />
-
         <select
           value={gender}
           onChange={(e) => setGender(e.target.value as any)}
@@ -109,56 +82,41 @@ export default function Home() {
       <div style={styles.treeWrapper}>
         <svg style={styles.svg}>
           {/* 父母 → 個案 */}
-          {self &&
-            fathers.map(() => (
-              <line
-                key={"father-line"}
-                x1={centerX}
-                y1={120}
-                x2={centerX}
-                y2={240}
-                stroke="black"
-              />
-            ))}
+          {fathers.map((_, i) => (
+            <line key={"f" + i} x1={300} y1={80} x2={300} y2={200} stroke="black" />
+          ))}
+          {mothers.map((_, i) => (
+            <line key={"m" + i} x1={300} y1={80} x2={300} y2={200} stroke="black" />
+          ))}
 
-          {self &&
-            mothers.map(() => (
-              <line
-                key={"mother-line"}
-                x1={centerX}
-                y1={120}
-                x2={centerX}
-                y2={240}
-                stroke="black"
-              />
-            ))}
+          {/* 配偶線 */}
+          {spouse && (
+            <line x1={200} y1={200} x2={400} y2={200} stroke="black" />
+          )}
 
-          {/* 個案 → 子女 */}
-          {self &&
-            children.map((_, i) => (
-              <line
-                key={"child-" + i}
-                x1={centerX}
-                y1={360}
-                x2={200 + i * 120}
-                y2={500}
-                stroke="black"
-              />
-            ))}
+          {/* 子女 */}
+          {children.map((_, i) => (
+            <line
+              key={"c" + i}
+              x1={300}
+              y1={260}
+              x2={200 + i * 120}
+              y2={380}
+              stroke="black"
+            />
+          ))}
         </svg>
 
-        {/* 分層 Layout */}
+        {/* 節點 */}
         <div style={styles.layout}>
-          {/* 父母層 */}
-          <div style={styles.row}>
-            {fathers.map(renderNode)}
-            {mothers.map(renderNode)}
-          </div>
+          {/* 父母 */}
+          <div style={styles.row}>{fathers.map(renderSquare)}</div>
+          <div style={styles.row}>{mothers.map(renderCircle)}</div>
 
-          {/* 配偶（左右個案） */}
+          {/* 配偶 + 個案 */}
           <div style={styles.spouseRow}>
-            <div>{spouse && renderNode(spouse)}</div>
-            <div>{self && renderNode(self)}</div>
+            {spouse && renderNode(spouse)}
+            {self && renderSelf(self)}
           </div>
 
           {/* 兄弟姊妹 */}
@@ -171,33 +129,26 @@ export default function Home() {
     </div>
   );
 
+  function renderSelf(m: Member) {
+    return <div style={styles.blackSquare} />;
+  }
+
   function renderNode(m: Member) {
-    const isMale = m.gender === "male";
-
-    return (
-      <div key={m.id} style={styles.node}>
-        <div style={isMale ? styles.square : styles.circle}>
-          <div>{isMale ? "□" : "○"}</div>
-
-          {m.name && <div>{m.name}</div>}
-          {m.age && <div>{m.age}歲</div>}
-
-          <div style={{ fontSize: 10 }}>{m.relation}</div>
-
-          {/* 刪除 */}
-          <button
-            onClick={() => deleteMember(m.id)}
-            style={styles.deleteBtn}
-          >
-            刪除
-          </button>
-        </div>
-      </div>
+    return m.gender === "male" ? (
+      <div style={styles.square} />
+    ) : (
+      <div style={styles.circle} />
     );
   }
-}
 
-const centerX = 300;
+  function renderSquare() {
+    return <div style={styles.square} />;
+  }
+
+  function renderCircle() {
+    return <div style={styles.circle} />;
+  }
+}
 
 const styles: Record<string, React.CSSProperties> = {
   container: {
@@ -208,9 +159,8 @@ const styles: Record<string, React.CSSProperties> = {
 
   form: {
     display: "flex",
-    gap: 8,
+    gap: 10,
     justifyContent: "center",
-    flexWrap: "wrap",
     marginBottom: 20,
   },
 
@@ -220,15 +170,14 @@ const styles: Record<string, React.CSSProperties> = {
   },
 
   button: {
-    padding: 6,
     border: "1px solid black",
+    padding: 6,
     background: "white",
-    cursor: "pointer",
   },
 
   treeWrapper: {
     position: "relative",
-    height: 600,
+    height: 500,
   },
 
   svg: {
@@ -245,45 +194,33 @@ const styles: Record<string, React.CSSProperties> = {
     display: "flex",
     justifyContent: "center",
     gap: 20,
-    margin: 25,
+    margin: 20,
   },
 
   spouseRow: {
     display: "flex",
     justifyContent: "center",
     gap: 80,
-    margin: 25,
+    margin: 20,
     alignItems: "center",
   },
 
-  node: {
-    textAlign: "center",
-  },
-
   square: {
+    width: 40,
+    height: 40,
     border: "2px solid black",
-    width: 100,
-    height: 100,
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "center",
   },
 
   circle: {
+    width: 40,
+    height: 40,
     border: "2px solid black",
-    width: 100,
-    height: 100,
     borderRadius: "50%",
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "center",
   },
 
-  deleteBtn: {
-    marginTop: 4,
-    fontSize: 10,
-    border: "1px solid black",
-    background: "white",
-    cursor: "pointer",
+  blackSquare: {
+    width: 40,
+    height: 40,
+    backgroundColor: "black",
   },
 };
